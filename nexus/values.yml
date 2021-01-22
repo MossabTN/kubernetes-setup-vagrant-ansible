@@ -1,0 +1,43 @@
+statefulset:
+  enabled: true
+nexus:
+  service:
+    type: ClusterIP
+nexusProxy:
+  enabled: true
+  env:
+    nexusHttpHost: nexus.maxilog.tech
+    nexusDockerHost: docker.maxilog.tech
+ingress:
+  enabled: true
+  hostRepo: nexus.maxilog.tech
+  tls:
+    secretName: nexus.maxilog.tech-tls
+  annotations:
+    {
+      nginx.ingress.kubernetes.io/rewrite-target: "/",
+      nginx.ingress.kubernetes.io/ssl-redirect: "false",
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m",
+      kubernetes.io/ingress.class: "nginx",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    }
+ingressDocker:
+  enabled: true
+  hostRepo: docker.maxilog.tech
+  tls:
+    secretName: docker.maxilog.tech-tls
+  annotations:
+    {
+      nginx.ingress.kubernetes.io/rewrite-target: "/",
+      nginx.ingress.kubernetes.io/ssl-redirect: "false",
+      nginx.ingress.kubernetes.io/proxy-body-size: "500m",
+      kubernetes.io/ingress.class: "nginx",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    }
+persistence:
+  storageSize: 100Gi
+
+resources:
+  requests:
+    cpu: 250m
+    #memory: 4800Mi

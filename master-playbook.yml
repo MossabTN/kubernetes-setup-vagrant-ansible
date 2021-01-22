@@ -1,0 +1,162 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Install packages that allow apt to be used over HTTPS
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+
+    - name: Add an apt signing key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add apt repository for stable version
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+        state: present
+
+    - name: Install docker and its dependecies
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+      notify:
+        - docker status
+
+    - name: Add vagrant user to docker group
+      user:
+        name: vagrant
+        group: docker
+    - name: Remove swapfile from /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
+
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
+
+    - name: Add an apt signing key for Kubernetes
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Adding apt repository for Kubernetes
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
+
+    - name: Install Kubernetes binaries
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - kubelet
+          - kubeadm
+          - kubectl
+          - bash-completion
+
+    - name: Bash Completion dependencies
+        become: false
+        command: "{{ item }}"
+        with_items:
+          - source <(kubectl completion bash)
+          - echo "source <(kubectl completion bash)" >> ~/.bashrc
+
+    - name: Install Helm
+      command: "{{ item }}"
+      with_items:
+        - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        - chmod 700 get_helm.sh
+        - ./get_helm.sh
+
+
+    - name: Configure node ip
+      lineinfile:
+        path: /etc/default/kubelet
+        line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
+        create: yes
+
+    - name: Restart kubelet
+      service:
+        name: kubelet
+        daemon_reload: yes
+        state: restarted
+
+    - name: Add IP address of /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        line: 192.168.50.10 maxilog.tech
+        state: present
+
+    - name: Initialize the Kubernetes cluster using kubeadm
+      command: kubeadm init --apiserver-advertise-address="192.168.50.10" --apiserver-cert-extra-sans="94.23.210.20"  --node-name k8s-master --pod-network-cidr=192.168.0.0/16
+
+    - name: Setup kubeconfig for vagrant user
+      command: "{{ item }}"
+      with_items:
+        - mkdir -p /home/vagrant/.kube
+        - cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
+        - chown vagrant:vagrant /home/vagrant/.kube/config
+
+    - name: Install calico pod network
+      become: false
+      command: "{{ item }}"
+      with_items:
+        - kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+        - kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+
+    - name: Install Ingress
+      become: false
+      command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.43.0/deploy/static/provider/baremetal/deploy.yaml
+
+    - name: Install cert-manager
+      become: false
+      command: "{{ item }}"
+      with_items:
+        - kubectl create ns cert-manager
+        - helm repo add jetstack https://charts.jetstack.io
+        - helm repo update
+        - helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.1.0 --set installCRDs=true
+
+    - name: Install cert-manager
+      become: false
+      command: "{{ item }}"
+      with_items:
+        - git clone https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner.git
+        - cd nfs-subdir-external-provisioner/deploy/helm/
+        - kubectl create ns nfs-subdir-external-provisioner
+        - helm install nfs-subdir-external-provisioner . --namespace nfs-external-provisioner --set nfs.server=192.168.50.8 --set nfs.path=/opt/nfs
+
+    - name: Generate join command
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Copy join command to local file
+      local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
+
+  handlers:
+    - name: docker status
+      service: name=docker state=started

@@ -1,0 +1,11 @@
+version: '2'
+
+services:
+  haproxy:
+    image: haproxy:alpine
+    container_name: haproxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy/:/etc/haproxy/

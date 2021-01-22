@@ -1,0 +1,19 @@
+auth:
+  adminUser: admin
+  adminPassword: admin4admin
+service:
+  type: ClusterIP
+ingress:
+  enabled: true
+  apiVersion: networking.k8s.io/v1
+  path: /
+  pathType: Prefix
+  hostname: auth.maxilog.tech
+  tls: true
+  annotations: |
+    {
+     nginx.ingress.kubernetes.io/rewrite-target: "/",
+     nginx.ingress.kubernetes.io/ssl-redirect: "false",
+     kubernetes.io/ingress.class: "nginx",
+     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    }
