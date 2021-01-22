@@ -1,0 +1,17 @@
+ingress:
+  enabled: true
+  hosts:
+    - name: sonarqube.maxilog.tech
+  tls:
+    - secretName: sonarqube.maxilog.tech-tls
+      hosts:
+        - sonarqube.maxilog.tech
+  annotations:
+    {
+      nginx.ingress.kubernetes.io/rewrite-target: "/",
+      nginx.ingress.kubernetes.io/ssl-redirect: "false",
+      kubernetes.io/ingress.class: "nginx",
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    }
+plugins:
+  install:

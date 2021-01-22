@@ -1,0 +1,32 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Install packages that allow apt to be used over HTTPS
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+          - nfs-kernel-server
+
+    - name: Creates /opt/nfs directory
+      file:
+        path: /opt/nfs
+        state: directory
+
+    - name: Update the /etc/exports file
+      lineinfile:
+        dest: /etc/exports
+        line: /opt/nfs/ *(rw,sync,no_root_squash,subtree_check)
+        state: present
+
+    - name: Commit the changes
+      become: false
+      command: exportfs -a
