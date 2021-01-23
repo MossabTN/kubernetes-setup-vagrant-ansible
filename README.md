@@ -1,1 +1,5 @@
 # kubernetes-setup
+
+```
+vagrant up
+```
