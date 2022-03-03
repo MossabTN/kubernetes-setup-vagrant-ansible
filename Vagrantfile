@@ -15,13 +15,13 @@ Vagrant.configure("2") do |config|
         node.vm.network "private_network", ip: NODE_IP+".8"
         node.vm.hostname = "nfs-server"
         node.vm.provision "ansible" do |ansible|
-            ansible.playbook = "kubernetes-setup/nfs-playbook.yml"
+            ansible.playbook = "nfs-playbook.yml"
             ansible.extra_vars = {
                 node_ip: NODE_IP+".8"
             }
         end
     end
-      
+
     config.vm.define "k8s-master" do |master|
         master.vm.box = IMAGE_NAME
         master.vm.network "private_network", ip: NODE_IP+".10"
@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
         	v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
         end
         master.vm.provision "ansible" do |ansible|
-            ansible.playbook = "kubernetes-setup/master-playbook.yml"
+            ansible.playbook = "master-playbook.yml"
             ansible.extra_vars = {
                 machine_ip: MACHINE_IP,
                 node_ip: NODE_IP+".10"
@@ -53,7 +53,7 @@ Vagrant.configure("2") do |config|
                 v.cpus = 2
             end
             node.vm.provision "ansible" do |ansible|
-                ansible.playbook = "kubernetes-setup/node-playbook.yml"
+                ansible.playbook = "node-playbook.yml"
                 ansible.extra_vars = {
                     master_ip: NODE_IP+".10",
                     node_ip: NODE_IP+".#{i + 10}"
