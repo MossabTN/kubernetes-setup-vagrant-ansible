@@ -180,11 +180,11 @@
           - bash-completion
 
     - name: Bash Completion dependencies
-        become: false
-        command: "{{ item }}"
-        with_items:
-          - source <(kubectl completion bash)
-          - echo "source <(kubectl completion bash)" >> ~/.bashrc
+      become: false
+      command: "{{ item }}"
+      with_items:
+        - source <(kubectl completion bash)
+        - echo "source <(kubectl completion bash)" >> ~/.bashrc
 
     - name: Install Helm
       command: "{{ item }}"
