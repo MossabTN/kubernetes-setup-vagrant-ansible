@@ -42,18 +42,19 @@
 #      user:
 #        name: vagrant
 #        group: docker
-#    - name: Remove swapfile from /etc/fstab
-#      mount:
-#        name: "{{ item }}"
-#        fstype: swap
-#        state: absent
-#      with_items:
-#        - swap
-#        - none
-#
-#    - name: Disable swap
-#      command: swapoff -a
-#      when: ansible_swaptotal_mb > 0
+    -
+    - name: Remove swapfile from /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
+
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
 
 
     - name: "modprobe overlay"
@@ -179,12 +180,17 @@
           - kubectl
           - bash-completion
 
-    - name: Bash Completion dependencies
+    - name: Bash Completion dependencies 1
       become: false
       command: "{{ item }}"
       with_items:
         - source <(kubectl completion bash)
-        - echo "source <(kubectl completion bash)" >> ~/.bashrc
+
+    - name: Bash Completion dependencies 2
+      lineinfile:
+        dest: ~/.bashrc
+        line: source <(kubectl completion bash)
+        state: present
 
     - name: Install Helm
       command: "{{ item }}"
@@ -197,22 +203,16 @@
     - name: Configure node ip
       lineinfile:
         path: /etc/default/kubelet
-        line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}--cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint="unix:///var/run/crio/crio.sock"
+        line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }} --cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint="unix:///var/run/crio/crio.sock"
         create: yes
 
     - name: Configure ip_forward
       shell: echo '1' > /proc/sys/net/ipv4/ip_forward
 
-    - name: Restart kubelet
-      service:
-        name: kubelet
-        daemon_reload: yes
-        state: restarted
-
     - name: Add IP address of /etc/hosts
       lineinfile:
         dest: /etc/hosts
-        line: {{ node_ip }} maxilog.tech
+        line: "{{ node_ip }} maxilog.tech"
         state: present
 
     - name: Initialize the Kubernetes cluster using kubeadm
