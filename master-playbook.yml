@@ -15,34 +15,6 @@
           - gnupg-agent
           - software-properties-common
 
-#    - name: Add an apt signing key for Docker
-#      apt_key:
-#        url: https://download.docker.com/linux/ubuntu/gpg
-#        state: present
-#
-#    - name: Add apt repository for stable version
-#      apt_repository:
-#        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
-#        state: present
-#
-#    - name: Install docker and its dependecies
-#      apt:
-#        name: "{{ packages }}"
-#        state: present
-#        update_cache: yes
-#      vars:
-#        packages:
-#          - docker-ce
-#          - docker-ce-cli
-#          - containerd.io
-#      notify:
-#        - docker status
-#
-#    - name: Add vagrant user to docker group
-#      user:
-#        name: vagrant
-#        group: docker
-    -
     - name: Remove swapfile from /etc/fstab
       mount:
         name: "{{ item }}"
@@ -180,18 +152,6 @@
           - kubectl
           - bash-completion
 
-    - name: Bash Completion dependencies 1
-      become: false
-      command: "{{ item }}"
-      with_items:
-        - source <(kubectl completion bash)
-
-    - name: Bash Completion dependencies 2
-      lineinfile:
-        dest: ~/.bashrc
-        line: source <(kubectl completion bash)
-        state: present
-
     - name: Install Helm
       command: "{{ item }}"
       with_items:
@@ -216,7 +176,7 @@
         state: present
 
     - name: Initialize the Kubernetes cluster using kubeadm
-      command: kubeadm init --apiserver-advertise-address="{{ node_ip }}" --apiserver-cert-extra-sans="{{ machine_ip }}"  --node-name k8s-master --pod-network-cidr=192.168.0.0/16
+      command: kubeadm init --kubernetes-version=1.23.1 --apiserver-advertise-address="{{ node_ip }}" --apiserver-cert-extra-sans="{{ machine_ip }}"  --node-name k8s-master --pod-network-cidr=192.168.0.0/16
 
     - name: Setup kubeconfig for vagrant user
       command: "{{ item }}"
@@ -245,7 +205,7 @@
         - helm repo update
         - helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.1.0 --set installCRDs=true
 
-    - name: Install cert-manager
+    - name: Install nfs-subdir-external-provisioner
       become: false
       command: "{{ item }}"
       with_items:
@@ -259,7 +219,3 @@
 
     - name: Copy join command to local file
       local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
-
-  handlers:
-    - name: docker status
-      service: name=docker state=started

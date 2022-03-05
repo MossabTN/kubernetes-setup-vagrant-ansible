@@ -28,5 +28,4 @@
         state: present
 
     - name: Commit the changes
-      become: false
       command: exportfs -a

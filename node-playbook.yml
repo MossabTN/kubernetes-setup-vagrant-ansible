@@ -16,33 +16,6 @@
           - software-properties-common
           - nfs-common
 
-    - name: Add an apt signing key for Docker
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    - name: Add apt repository for stable version
-      apt_repository:
-        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
-        state: present
-
-    - name: Install docker and its dependecies
-      apt:
-        name: "{{ packages }}"
-        state: present
-        update_cache: yes
-      vars:
-        packages:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-      notify:
-        - docker status
-
-    - name: Add vagrant user to docker group
-      user:
-        name: vagrant
-        group: docker
     - name: Remove swapfile from /etc/fstab
       mount:
         name: "{{ item }}"
@@ -55,6 +28,106 @@
     - name: Disable swap
       command: swapoff -a
       when: ansible_swaptotal_mb > 0
+
+    - name: "modprobe overlay"
+      modprobe:
+        name: overlay
+        state: present
+
+    - name: "modprobe br_netfilter"
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: "sysctl"
+      shell: "sysctl --system"
+
+    - name: Put kubernetes-cri template
+      template:
+        src: "{{ item }}"
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        mode: 777
+      with_fileglob:
+        - ./cri-o/99-kubernetes-cri.conf.j2
+
+    - name: Creates directory
+      file:
+        path: /etc/cni/net.d
+        state: directory
+
+    - name: Put 10-crio.conf template
+      template:
+        src: "{{ item }}"
+        dest: /etc/cni/net.d/10-crio.conf
+        mode: 777
+      with_fileglob:
+        - ./cri-o/10-crio.conf.j2
+
+    - name: Get Cri-o apt-key
+      apt_key:
+        url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/Release.key
+        state: present
+
+    - name: Get Cri-o apt-key
+      apt_key:
+        url: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.23/xUbuntu_18.04/Release.key
+        state: present
+
+    - name: Add Cri-o stable repo
+      apt_repository:
+        repo: deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /
+        state: present
+        filename: cri-o-stable
+
+    - name: Add Cri-o stable repo
+      apt_repository:
+        repo: deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.23/xUbuntu_18.04/ /
+        state: present
+        filename: cri-o-1.23
+
+    - name: update apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: install required packages
+      apt:
+        name: "{{ packages }}"
+        update_cache: true
+        state: present
+      vars:
+        packages:
+          - cri-o
+          - cri-tools
+          - cri-o-runc
+          - runc
+
+    - name: "Put storage template"
+      template:
+        src: "{{ item }}"
+        dest: /etc/containers/storage.conf
+        mode: 0777
+      with_fileglob:
+        - ./cri-o/storage.conf.j2
+
+    - name: Reload configs
+      systemd: daemon_reload=yes
+
+    - name: Enable Cri-o Service
+      systemd:
+        name: crio
+        enabled: yes
+
+    - name: Restart Cri-o
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: crio
+
+    - name: Make sure a crio is running
+      systemd:
+        state: started
+        name: crio
 
     - name: Add an apt signing key for Kubernetes
       apt_key:
@@ -81,19 +154,17 @@
     - name: Configure node ip
       lineinfile:
         path: /etc/default/kubelet
-        line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}
+        line: KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }} --cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint="unix:///var/run/crio/crio.sock"
         create: yes
 
-    - name: Restart kubelet
-      service:
-        name: kubelet
-        daemon_reload: yes
-        state: restarted
+    - name: Configure ip_forward
+      shell: echo '1' > /proc/sys/net/ipv4/ip_forward
+
 
     - name: Add IP address of /etc/hosts
       lineinfile:
         dest: /etc/hosts
-        line: 192.168.50.10 maxilog.tech
+        line: {{ master_ip }} maxilog.tech
         state: present
 
     - name: Copy the join command to server location
@@ -101,7 +172,3 @@
 
     - name: Join the node to cluster
       command: sh /tmp/join-command.sh
-
-  handlers:
-    - name: docker status
-      service: name=docker state=started
