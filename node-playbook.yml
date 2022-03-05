@@ -164,7 +164,7 @@
     - name: Add IP address of /etc/hosts
       lineinfile:
         dest: /etc/hosts
-        line: {{ master_ip }} maxilog.tech
+        line: "{{ node_ip }} maxilog.me"
         state: present
 
     - name: Copy the join command to server location
