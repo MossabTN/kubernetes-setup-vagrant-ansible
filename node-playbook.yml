@@ -147,8 +147,8 @@
         update_cache: yes
       vars:
         packages:
-          - kubelet
-          - kubeadm
+          - kubelet=1.23.4-00
+          - kubeadm=1.23.4-00
           - kubectl
 
     - name: Configure node ip

@@ -147,8 +147,8 @@
         update_cache: yes
       vars:
         packages:
-          - kubelet
-          - kubeadm
+          - kubelet=1.23.4-00
+          - kubeadm=1.23.4-00
           - kubectl
           - bash-completion
 
@@ -176,7 +176,7 @@
         state: present
 
     - name: Initialize the Kubernetes cluster using kubeadm
-      command: kubeadm init --kubernetes-version=1.23.1 --apiserver-advertise-address="{{ node_ip }}" --apiserver-cert-extra-sans="{{ machine_ip }}"  --node-name k8s-master --pod-network-cidr=192.168.0.0/16
+      command: kubeadm init --kubernetes-version=1.23.4 --apiserver-advertise-address="{{ node_ip }}" --apiserver-cert-extra-sans="{{ machine_ip }}"  --node-name k8s-master --pod-network-cidr=192.168.0.0/16
 
     - name: Setup kubeconfig for vagrant user
       command: "{{ item }}"
