@@ -7,11 +7,7 @@ ingress:
       hosts:
         - sonarqube.maxilog.me
   annotations:
-    {
-      nginx.ingress.kubernetes.io/rewrite-target: "/",
-      nginx.ingress.kubernetes.io/ssl-redirect: "false",
-      kubernetes.io/ingress.class: "nginx",
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    }
-plugins:
-  install:
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"

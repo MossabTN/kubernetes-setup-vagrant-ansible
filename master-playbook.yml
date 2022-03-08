@@ -198,7 +198,7 @@
       with_items:
         - kubectl create ns nfs-external-provisioner
         - helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
-        - helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner --namespace nfs-external-provisioner --set nfs.server=192.168.50.8 --set nfs.path=/opt/nfs
+        - helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner --namespace nfs-external-provisioner --set nfs.server=192.168.50.8 --set nfs.path=/opt/nfs --set storageClass.defaultClass=true
 
     - name: Generate join command
       command: kubeadm token create --print-join-command

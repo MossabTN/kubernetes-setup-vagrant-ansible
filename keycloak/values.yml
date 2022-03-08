@@ -1,6 +1,7 @@
 auth:
   adminUser: admin
   adminPassword: admin4admin
+proxyAddressForwarding: true
 service:
   type: ClusterIP
 ingress:
@@ -10,10 +11,8 @@ ingress:
   pathType: Prefix
   hostname: auth.maxilog.me
   tls: true
-  annotations: |
-    {
-     nginx.ingress.kubernetes.io/rewrite-target: "/",
-     nginx.ingress.kubernetes.io/ssl-redirect: "false",
-     kubernetes.io/ingress.class: "nginx",
-     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    }
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
