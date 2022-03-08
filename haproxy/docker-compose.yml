@@ -2,10 +2,12 @@ version: '2'
 
 services:
   haproxy:
-    image: haproxy:alpine
+    image: haproxy:2.3-alpine
     container_name: haproxy
     restart: always
     ports:
       - "80:80"
+      - "443:443"
+      - "6443:6443"
     volumes:
-      - ./haproxy/:/etc/haproxy/
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro

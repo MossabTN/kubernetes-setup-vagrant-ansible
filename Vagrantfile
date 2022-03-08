@@ -1,7 +1,7 @@
 IMAGE_NAME = "bento/ubuntu-18.04"
 MACHINE_IP = "94.23.210.20"
 NODE_IP = "192.168.50"
-N = 3
+N = 4
 
 Vagrant.configure("2") do |config|
     config.ssh.insert_key = false

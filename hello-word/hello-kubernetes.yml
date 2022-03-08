@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - jenkins.maxilog.tech
+        - hello.maxilog.me
       secretName: hello-secret-tls
   rules:
-    - host: jenkins.maxilog.tech
+    - host: hello.maxilog.me
       http:
         paths:
           - path: /

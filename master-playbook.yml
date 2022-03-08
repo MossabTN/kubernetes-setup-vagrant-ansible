@@ -196,8 +196,8 @@
       become: false
       command: "{{ item }}"
       with_items:
-        - helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
         - kubectl create ns nfs-external-provisioner
+        - helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
         - helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner --namespace nfs-external-provisioner --set nfs.server=192.168.50.8 --set nfs.path=/opt/nfs
 
     - name: Generate join command

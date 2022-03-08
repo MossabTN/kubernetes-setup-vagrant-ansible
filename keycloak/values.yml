@@ -8,7 +8,7 @@ ingress:
   apiVersion: networking.k8s.io/v1
   path: /
   pathType: Prefix
-  hostname: auth.maxilog.tech
+  hostname: auth.maxilog.me
   tls: true
   annotations: |
     {
